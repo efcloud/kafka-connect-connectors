@@ -2,6 +2,7 @@ package com.instaclustr.kafka.connect.s3;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
@@ -39,26 +40,31 @@ public class TransferManagerProvider {
         String region = getFromConfigOrEnvironment(config, AwsStorageConnectorCommonConfig.AWS_REGION);
         String roleArn = getFromConfigOrEnvironment(config, AwsStorageConnectorCommonConfig.AWS_IAM_ROLE_ARN);
 
-        AWSStaticCredentialsProvider awsStaticCredentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secret));
         AWSCredentialsProvider awsCredentialsProvider;
-
-        if (StringUtils.isBlank(roleArn)) {
-            // when IAM user has direct access to the S3 bucket
-            awsCredentialsProvider = awsStaticCredentialsProvider;
+        if (StringUtils.isBlank(accessKey)) {
+            // when accessKey is not specified, use the DefaultAWSCredentialsProviderChain
+            awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
         } else {
-            // when the IAM user needs to assume the role to access the S3 bucket
-            AWSSecurityTokenService awsSecurityTokenService = AWSSecurityTokenServiceClientBuilder.standard()
-                    .withCredentials(awsStaticCredentialsProvider)
-                    .build();
+            AWSStaticCredentialsProvider awsStaticCredentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secret));
 
-            STSAssumeRoleSessionCredentialsProvider.Builder assumeRoleBuilder =
-                    new STSAssumeRoleSessionCredentialsProvider.Builder(
-                            roleArn,
-                            UUID.randomUUID().toString().substring(0, 32));
+            if (StringUtils.isBlank(roleArn)) {
+                // when IAM user has direct access to the S3 bucket
+                awsCredentialsProvider = awsStaticCredentialsProvider;
+            } else {
+                // when the IAM user needs to assume the role to access the S3 bucket
+                AWSSecurityTokenService awsSecurityTokenService = AWSSecurityTokenServiceClientBuilder.standard()
+                        .withCredentials(awsStaticCredentialsProvider)
+                        .build();
 
-            awsCredentialsProvider = assumeRoleBuilder
-                    .withStsClient(awsSecurityTokenService)
-                    .build();
+                STSAssumeRoleSessionCredentialsProvider.Builder assumeRoleBuilder =
+                        new STSAssumeRoleSessionCredentialsProvider.Builder(
+                                roleArn,
+                                UUID.randomUUID().toString().substring(0, 32));
+
+                awsCredentialsProvider = assumeRoleBuilder
+                        .withStsClient(awsSecurityTokenService)
+                        .build();
+            }
         }
 
         AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard()
