@@ -24,6 +24,8 @@ public class AwsStorageConnectorCommonConfig {
 
     public static final String S3_KEY_PREFIX = "prefix";
 
+    public static final String AWS_AUTH_MODE = "aws.auth.mode";
+
     public static final String AWS_SECRET_KEY = "aws.secretKey";
 
     public static final String AWS_ACCESS_KEY_ID = "aws.accessKeyId";
@@ -39,8 +41,9 @@ public class AwsStorageConnectorCommonConfig {
         configDef.define(BUCKET, ConfigDef.Type.STRING, ConfigDef.Importance.HIGH, "Name of the S3 bucket")
                 .define(S3_KEY_PREFIX, ConfigDef.Type.STRING, "", new RegexStringValidator(Pattern.compile("^$|[-a-zA-Z0-9_./]+$"), "prefix can only contain alphanumerics, underscores(_), hyphens(-), periods(.) and slashes(/) only."),
                         ConfigDef.Importance.HIGH, "Path prefix for the objects written into S3")
-                .define(AWS_ACCESS_KEY_ID, ConfigDef.Type.STRING, ConfigDef.Importance.HIGH, "AWS access key id")
-                .define(AWS_SECRET_KEY, ConfigDef.Type.PASSWORD, ConfigDef.Importance.HIGH, "AWS access secret key")
+                .define(AWS_AUTH_MODE, ConfigDef.Type.STRING, "", new RegexStringValidator(Pattern.compile("^$|^(Default|Credentials)$"), "Only empty string, 'Default' or 'Credentials' are valid values."), ConfigDef.Importance.HIGH, "AWS auth mode: Default or Credentials")
+                .define(AWS_ACCESS_KEY_ID, ConfigDef.Type.STRING, "", ConfigDef.Importance.HIGH, "AWS access key id")
+                .define(AWS_SECRET_KEY, ConfigDef.Type.PASSWORD, "", ConfigDef.Importance.HIGH, "AWS access secret key")
                 .define(AWS_REGION, ConfigDef.Type.STRING, DEFAULT_AWS_REGION, ConfigDef.Importance.MEDIUM, String.format("AWS client region, if not set will use %s", DEFAULT_AWS_REGION))
                 .define(AWS_IAM_ROLE_ARN, ConfigDef.Type.STRING, "", ConfigDef.Importance.HIGH, "");
         return configDef;
@@ -92,7 +95,7 @@ public class AwsStorageConnectorCommonConfig {
                     addErrorMessageToConfigObject(configObject, AWS_IAM_ROLE_ARN, "The defined aws.role.arn is invalid");
                     break;
                 default:
-                    throw new ConnectException(String.format("Unknown Amazon S3 exception while validating config, %s", e.getErrorCode()), e);
+                    throw new ConnectException(String.format("Unknown Amazon S3 exception while validating config, %s", e.getErrorMessage()), e);
             }
         } catch (IllegalArgumentException e) {
             addErrorMessageToConfigObject(configObject, AWS_REGION, "The defined aws.region is invalid");

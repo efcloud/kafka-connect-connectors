@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 public class TransferManagerProvider {
     private TransferManager transferManager;
@@ -35,14 +34,15 @@ public class TransferManagerProvider {
     }
 
     public static AmazonS3ClientBuilder getS3ClientBuilderWithRegionAndCredentials(final Map<String, String> config) {
+        String authMode = getFromConfigOrEnvironment(config, AwsStorageConnectorCommonConfig.AWS_AUTH_MODE);
         String accessKey = getFromConfigOrEnvironment(config, AwsStorageConnectorCommonConfig.AWS_ACCESS_KEY_ID);
         String secret = getFromConfigOrEnvironment(config, AwsStorageConnectorCommonConfig.AWS_SECRET_KEY);
         String region = getFromConfigOrEnvironment(config, AwsStorageConnectorCommonConfig.AWS_REGION);
         String roleArn = getFromConfigOrEnvironment(config, AwsStorageConnectorCommonConfig.AWS_IAM_ROLE_ARN);
 
         AWSCredentialsProvider awsCredentialsProvider;
-        if (StringUtils.isBlank(accessKey)) {
-            // when accessKey is not specified, use the DefaultAWSCredentialsProviderChain
+        if (StringUtils.isBlank(authMode) || StringUtils.equals(authMode, "Default")) {
+            // when auth mode is Default, use the DefaultAWSCredentialsProviderChain
             awsCredentialsProvider = new DefaultAWSCredentialsProviderChain();
         } else {
             AWSStaticCredentialsProvider awsStaticCredentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secret));
