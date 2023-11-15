@@ -141,9 +141,7 @@ public class AwsStorageSourceConnector extends SourceConnector {
     public ConfigDef config() {
         ConfigDef configDef = AwsStorageConnectorCommonConfig.conf();
         configDef.define(SOURCE_TOPICS, ConfigDef.Type.STRING, "", ConfigDef.Importance.MEDIUM, "Define the required topics to be read from s3");
-        configDef.define(SINK_TOPIC_PREFIX, ConfigDef.Type.STRING, "",
-                new RegexStringValidator(Pattern.compile("^$|^[a-zA-Z0-9]+$"), "Only alphanumeric allowed"),
-                ConfigDef.Importance.MEDIUM, "Prefix for the created topics");
+        configDef.define(SINK_TOPIC_PREFIX, ConfigDef.Type.STRING, "", ConfigDef.Importance.MEDIUM, "Prefix for the created topics");
         configDef.define(MAX_RECORDS_PER_SECOND, ConfigDef.Type.INT, MAX_RECORDS_PER_SECOND_DEFAULT, ConfigDef.Importance.MEDIUM, "Rate limit the number of records produced per second");
         return configDef;
     }
